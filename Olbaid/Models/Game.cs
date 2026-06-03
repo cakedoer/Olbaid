@@ -1,8 +1,10 @@
-﻿namespace Olbaid.Models;
+﻿using Olbaid.Models.Creatures;
+
+namespace Olbaid.Models;
 
 public class Game
 {
-    private readonly Map _map = new(10, 10);
+    private readonly Map.Map _map = new(10, 10);
     private readonly Player _player = new(1, 1);
     private string _statusMessage = "";
     

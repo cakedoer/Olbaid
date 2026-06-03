@@ -1,4 +1,4 @@
-﻿namespace Olbaid.Models;
+﻿namespace Olbaid.Models.UI;
 
 public class InteractableRow(string label, int min, int max, int initial = 0) : IMenuRow
 {

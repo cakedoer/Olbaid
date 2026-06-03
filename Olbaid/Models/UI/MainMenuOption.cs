@@ -1,4 +1,4 @@
-﻿namespace Olbaid.Models;
+﻿namespace Olbaid.Models.UI;
 
 public enum MainMenuOption
 {

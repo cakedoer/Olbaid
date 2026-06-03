@@ -1,6 +1,6 @@
-﻿namespace Olbaid.Models;
+﻿namespace Olbaid.Models.Map;
 
-public class TileType
+public static class TileType
 {
     public const char Floor = '▒';
     public const char Wall  = '#';

@@ -1,4 +1,6 @@
-﻿namespace Olbaid.Models;
+﻿using Olbaid.Models.Archetypes;
+
+namespace Olbaid.Models.Creatures;
 
 public class Creature
 {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Olbaid.Models.Archetypes;
+using Olbaid.Models.Creatures;
 
 namespace Olbaid.Models;
 

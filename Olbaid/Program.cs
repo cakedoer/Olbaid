@@ -1,4 +1,5 @@
 ﻿using Olbaid.Models;
+using Olbaid.Models.UI;
 
 namespace Olbaid;
 

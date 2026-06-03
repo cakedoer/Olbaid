@@ -1,5 +1,6 @@
-﻿namespace Olbaid.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Olbaid.Models.Archetypes;
 
 public class Archetype
 {

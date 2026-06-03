@@ -1,4 +1,4 @@
-﻿namespace Olbaid.Models;
+﻿namespace Olbaid.Models.Creatures;
 
 public class Player : Creature
 {

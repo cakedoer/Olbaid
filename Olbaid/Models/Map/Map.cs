@@ -1,6 +1,6 @@
-﻿using static Olbaid.Models.TileType;
+﻿using static Olbaid.Models.Map.TileType;
 
-namespace Olbaid.Models;
+namespace Olbaid.Models.Map;
 
 public class Map
 {
