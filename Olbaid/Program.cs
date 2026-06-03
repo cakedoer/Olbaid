@@ -21,6 +21,8 @@ internal class Program
 {
     public static void Main(string[] args)
     {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        // Console.InputEncoding  = System.Text.Encoding.UTF8;
         Console.CursorVisible = false;
         bool quit = false;
         GameState gameState = GameState.Mainmenu;
@@ -46,6 +48,8 @@ internal class Program
                 case GameState.Newgame:
                     // todo game logic
                     Console.Clear();
+                    Map map = new Map(10, 10);
+                    map.Draw();
                     Console.WriteLine("\nPress any key to continue...");
                         
                     Console.ReadKey(true); 
