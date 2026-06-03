@@ -2,21 +2,6 @@
 
 namespace Olbaid;
 
-public enum GameState
-{
-    Mainmenu,
-    Newgame,
-    Loadgame,
-    Quit
-}
-
-public enum MainMenuOption
-{
-    Newgame,
-    Loadgame,
-    Quit
-}
-
 internal class Program
 {
     public static void Main(string[] args)
@@ -28,7 +13,12 @@ internal class Program
         GameState gameState = GameState.Mainmenu;
 
         // define menus like this for now, todo composite pattern menus for point allocation etc.
-        SimpleMenu mainMenu = new SimpleMenu("Main Menu", ["New Game", "Load Game", "Quit"]);
+        // SimpleMenu mainMenu = new SimpleMenu("Main Menu", ["New Game", "Load Game", "Quit"]);
+        CompositeMenu mainMenu = new CompositeMenu("Main Menu", [
+            new SelectableRow("New Game"),
+            new SelectableRow("Load Game"),
+            new SelectableRow("Quit")
+        ]);
             
         while (!quit)
         {
@@ -46,17 +36,10 @@ internal class Program
                     break;
 
                 case GameState.Newgame:
-                    // todo game logic
-                    Console.Clear();
-                    Map map = new Map(10, 10);
-                    map.Draw();
-                    Console.WriteLine("\nPress any key to continue...");
-                        
-                    Console.ReadKey(true); 
-                        
-                    gameState = GameState.Mainmenu; 
+                    // new game logic caller
+                    gameState = new Game().Start();
                     break;
-                    
+                
                 case GameState.Loadgame:
                     Console.Clear();
                     Console.WriteLine("\nPress any key to continue...");
