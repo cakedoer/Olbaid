@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Olbaid.Models.Creatures;
+using Olbaid.Models.UI;
 
 namespace Olbaid.Models;
 
@@ -7,17 +8,27 @@ public class Game(Player player, GameContext db)
 {
     private readonly List<Creature> _monsters = db.RockMonsters
         .Include(r => r.Archetype)
-        .ToList<Creature>();
+        .ToList<Creature>()
+        .Select(m => { m.Setup(); return m; })
+        .ToList();
     
     private readonly Map.Map _map = new(10, 10);
     private string _statusMessage = "";
 
     public GameState Start()
     {
+        // test monster vals
+        foreach (var m in _monsters)
+            Console.WriteLine($"Monster: {m.GetType().Name}, Archetype: {m.Archetype?.Name ?? "NULL"}, STR: {m.Strength}, HP: {m.CurrHealth}");
+        Console.ReadKey(true);
+        
         while (true)
         {
-            GameState? result = HandleInput();
-            if (result.HasValue) return result.Value;
+            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+            if (keyInfo.Key == ConsoleKey.Escape) return GameState.Mainmenu;
+        
+            InputResult result = HandleInput(keyInfo); // pass keyInfo in
+            if (result == InputResult.Blocked) _statusMessage = "Blocked!";
             
             Console.Clear();
             
@@ -31,8 +42,8 @@ public class Game(Player player, GameContext db)
             Console.WriteLine();
             
             _map.Draw();
-            Console.SetCursorPosition(player.X, player.Y+2);
-            Console.Write('@'); // Player character
+            Console.SetCursorPosition(player.X, player.Y + 2);
+            Console.Write('@');
             
             foreach (Creature monster in _monsters)
             {
@@ -42,39 +53,94 @@ public class Game(Player player, GameContext db)
                 Console.ResetColor();
             }
             
-            // write status message here so that it doesn't get immediately overwritten
             Console.SetCursorPosition(0, _map.Height + 3);
             Console.Write(_statusMessage);
+            
+            // always render action menu below status message
+            Console.SetCursorPosition(0, _map.Height + 4);
+            Console.WriteLine("Choose action:");
+            Console.SetCursorPosition(0, _map.Height + 5);
+            Console.Write("  [Enter] Attack");
         }
     }
 
-    private GameState? HandleInput()
+    private InputResult HandleInput(ConsoleKeyInfo keyInfo)
     {
-        // on successful move:
         _statusMessage = "";
-        ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-        bool moved = false;
     
         switch (keyInfo.Key)
         {
             // cardinal directions
-            case ConsoleKey.W: moved = player.Move(0, -1,  _map.Width, _map.Height); break;
-            case ConsoleKey.A: moved = player.Move(-1, 0,  _map.Width, _map.Height); break;
-            case ConsoleKey.S: moved = player.Move(0, 1,   _map.Width, _map.Height); break;
-            case ConsoleKey.D: moved = player.Move(1, 0,   _map.Width, _map.Height); break;
-            //diagonals
-            case ConsoleKey.Q: moved = player.Move(-1, -1, _map.Width, _map.Height); break;
-            case ConsoleKey.E: moved = player.Move(1, -1,  _map.Width, _map.Height); break;
-            case ConsoleKey.Z: moved = player.Move(-1, 1,  _map.Width, _map.Height); break;
-            case ConsoleKey.X: moved = player.Move(1, 1,   _map.Width, _map.Height); break;
-            //exit
-            case ConsoleKey.Escape: return GameState.Mainmenu;
+            case ConsoleKey.W: return player.Move(0, -1,  _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            case ConsoleKey.A: return player.Move(-1, 0,  _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            case ConsoleKey.S: return player.Move(0, 1,   _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            case ConsoleKey.D: return player.Move(1, 0,   _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            // diagonals
+            case ConsoleKey.Q: return player.Move(-1, -1, _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            case ConsoleKey.E: return player.Move(1, -1,  _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            case ConsoleKey.Z: return player.Move(-1, 1,  _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            case ConsoleKey.X: return player.Move(1, 1,   _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            case ConsoleKey.Enter:  return RunAttack() ? InputResult.TurnConsumed : InputResult.None;
+            case ConsoleKey.Escape: return InputResult.None; // handled separately
         }
 
-        if (moved || keyInfo.Key == ConsoleKey.Escape) return null;
-        Console.SetCursorPosition(0, _map.Height + 1);
-        _statusMessage = "Blocked!";
+        return InputResult.None;
+    }
+    
+    private bool RunAttack()
+    {
+        // look for monsters in range
+        List<Creature> targets = [];
+        
+        for (int y = player.Y - player.CurrRange; y <= player.Y + player.CurrRange; y++)
+        {
+            for (int x = player.X - player.CurrRange; x <= player.X + player.CurrRange; x++)
+            {
+                if (x < 0 || x >= _map.Width || y < 0 || y >= _map.Height) continue;
+                
+                Creature? found = _monsters.FirstOrDefault(m => m.X == x && m.Y == y);
+                if (found != null) targets.Add(found);
+            }
+        }
+        
+        if (targets.Count == 0)
+        {
+            _statusMessage = "No monsters in range.";
+            return false; // turn not consumed
+        }
+        
+        // build target selection menu
+        IMenuRow[] rows = targets
+            .Select(m => (IMenuRow)new SelectableRow($"{m.GetType().Name} (HP: {m.CurrHealth}/{m.MaxHealth})"))
+            .Append(new SelectableRow("Cancel"))
+            .ToArray();
 
-        return null;
+        CompositeMenu targetMenu = new CompositeMenu(() => "Select Target", rows);
+        int selectedIndex = targetMenu.ShowAndGetSelection();
+
+        // last index is always Cancel
+        if (selectedIndex == rows.Length - 1)
+        {
+            _statusMessage = "";
+            return false; // turn not consumed
+        }
+        
+        Creature target = targets[selectedIndex];
+        
+        bool killed = player.Attack(target);
+        
+        if (killed)
+        {
+            _monsters.Remove(target);
+            player.KillCount++;
+            db.Players.Update(player);
+            db.SaveChanges();
+            _statusMessage = $"{target.GetType().Name} defeated!";
+        }
+        else
+        {  _statusMessage = $"Hit! {target.GetType().Name} has" +
+                            $"{target.CurrHealth}/{target.MaxHealth} HP remaining."; }
+        
+        return true; // turn consumed
     }
 }

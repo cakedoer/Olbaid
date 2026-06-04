@@ -1,4 +1,5 @@
-﻿using Olbaid.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Olbaid.Models;
 using Olbaid.Models.Archetypes;
 using Olbaid.Models.Creatures;
 using Olbaid.Models.UI;
@@ -10,8 +11,8 @@ internal class Program
     
     public static void Main(string[] args)
     {
-        // Instantiate context with a "using" statement, does memory cleanup
-        using var context = new GameContext();
+        // Instantiate context, runs, exits when program is closed.
+        using GameContext context = new GameContext();
         // Force EF Core to create the db file and execute OnModelCreating seeds
         context.Database.EnsureCreated();
         
@@ -50,10 +51,20 @@ internal class Program
 
                 case GameState.Newgame:
                 {
+                    // should have separate instances of GameContext for larger scale applications.
                     using GameContext db = new GameContext();
                     Archetype chosen = RunArchetypeSelection(db);
-                    var (stren, dexte, intel) = RunStatAllocation(chosen);
-                    gameState = new Game(new Player(1, 1, chosen, stren, dexte, intel), context).Start();
+                    // tuple deconstruction
+                    (int stren, int dexte, int intel) = RunStatAllocation(chosen);
+                    Player newPlayer = new Player(1, 1, chosen, stren, dexte, intel);
+                    newPlayer.CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    db.Players.Add(newPlayer);
+                    
+                    db.SaveChanges();
+                    
+                    
+                    
+                    gameState = new Game(newPlayer, db).Start();
                     break;
                 }
 
@@ -76,7 +87,7 @@ internal class Program
     
     private static Archetype RunArchetypeSelection(GameContext db)
     {
-        List<Archetype> archetypes = db.Archetypes.ToList();
+        List<Archetype> archetypes = db.Archetypes.Where(a => a.IsPlayerArchetype).ToList();
     
         CompositeMenu archetypeMenu = new CompositeMenu(() => "CHOOSE CLASS",
             // archetypes.Select(a => (IMenuRow)new SelectableRow(a.Name)).ToArray()

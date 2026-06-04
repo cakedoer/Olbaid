@@ -4,6 +4,7 @@ namespace Olbaid.Models.Creatures;
 
 public abstract class Creature
 {
+    protected Creature(){} // need this for inheritance otherwise compiler moans about child classes' constructors
     // change set; to init; later
     public int Id { get; set; }
     
@@ -13,24 +14,39 @@ public abstract class Creature
     public int X { get; internal set; }
     public int Y { get; internal set; }
 
-    protected int Strength     { get; set; }
-    protected int Dexterity    { get; set; }
-    protected int Intelligence { get; set; }
+    public int Strength     { get; internal set; }
+    public int Dexterity    { get; internal set; }
+    public int Intelligence { get; internal set; }
+    
+    public long CreatedAt { get; internal set; } // unix timestamp
+    public int KillCount { get; set; }
     
     public int MaxHealth  { get; set; }
     public int MaxMana    { get; set; }
-    public int Attack     { get; set; }
+    public int Power     { get; set; }
     public int CurrHealth { get; set; }
     public int CurrMana   { get; set; }
     
-    // initialize the creature based on its own stats (base archetype + allocated points)
-    protected void Setup()
-    {
-        MaxHealth = Strength     * 5;
-        MaxMana   = Intelligence * 3;
-        Attack    = Dexterity    * 2;
+    public int CurrRange { get; set; }
 
+    protected Creature(Archetype archetype)
+    {
+        ArchetypeId = archetype.Id;
+        Archetype   = archetype;
+    }
+    
+    // initialize the creature based on its own stats (base archetype; additionally allocated points in Player.cs)
+    public virtual void Setup()
+    {
+        Strength     = Archetype.Strength;
+        Dexterity    = Archetype.Dexterity;
+        Intelligence = Archetype.Intelligence;
+    
+        MaxHealth  = Strength     * 5;
+        MaxMana    = Intelligence * 3;
+        Power      = Dexterity    * 2;
         CurrHealth = MaxHealth;
         CurrMana   = MaxMana;
+        CurrRange  = Archetype.BaseRange;
     }
 }

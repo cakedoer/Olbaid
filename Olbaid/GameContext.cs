@@ -10,7 +10,7 @@ public class GameContext : DbContext
     public DbSet<Creature>  Creatures  { get; set; }
     public DbSet<Player>  Players  { get; set; }
     
-    //temporary - remove later
+    // rock monsters temporary for testing purposes - remove later
     public DbSet<RockMonster> RockMonsters { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)

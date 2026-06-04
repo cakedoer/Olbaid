@@ -4,16 +4,17 @@ namespace Olbaid.Models.Creatures;
 
 public class Player : Creature
 {
-    protected Player(){} // parameterless constructor only for EF
+    public Player(){} // parameterless constructor only for EF
     
-    public Player(int initialX, int initialY, Archetype archetype, int stren,  int dexte, int intel)
+    private readonly int _stren, _dexte, _intel;
+    
+    public Player(int x, int y, Archetype archetype, int stren, int dexte, int intel) : base(archetype)
     {
-        X = initialX;
-        Y = initialY;
-        Archetype = archetype;
-        Strength     = archetype.Strength     + stren;
-        Dexterity    = archetype.Dexterity    + dexte;
-        Intelligence = archetype.Intelligence + intel;
+        X      = x;
+        Y      = y;
+        _stren = stren;
+        _dexte = dexte;
+        _intel = intel;
         Setup();
     }
     
@@ -31,5 +32,19 @@ public class Player : Creature
         X = newX;
         Y = newY;
         return true;
+    }
+    
+    public bool Attack(Creature target)
+    {
+        target.CurrHealth -= this.Power;
+        return target.CurrHealth <= 0;
+    }
+    
+    public sealed override void Setup()
+    {
+        Strength     = Archetype.Strength     + _stren;
+        Dexterity    = Archetype.Dexterity    + _dexte;
+        Intelligence = Archetype.Intelligence + _intel;
+        base.Setup();
     }
 }
