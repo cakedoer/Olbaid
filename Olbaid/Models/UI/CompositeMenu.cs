@@ -1,18 +1,16 @@
 ﻿namespace Olbaid.Models.UI;
 
-public class CompositeMenu(string menuTitle, IMenuRow[] rows)
+public class CompositeMenu(Func<string> menuTitle, IMenuRow[] rows)
 {
     private int _selectedIndex = 0;
-    
-    public T ShowAndGetSelection<T>() where T : struct, Enum
+
+    public int ShowAndGetSelection()
     {
-        var values = Enum.GetValues<T>();
-        
         bool selecting = true;
         while (selecting)
         {
             Render();
-            
+
             // only has up and down for now
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
             switch (keyInfo.Key)
@@ -25,7 +23,7 @@ public class CompositeMenu(string menuTitle, IMenuRow[] rows)
                     //_selectedIndex = (_selectedIndex == options.Length - 1) ? 0 : _selectedIndex + 1;
                     _selectedIndex = (_selectedIndex == rows.Length - 1) ? 0 : _selectedIndex + 1;
                     break;
-                case ConsoleKey.LeftArrow:  rows[_selectedIndex].OnLeft();  break;
+                case ConsoleKey.LeftArrow: rows[_selectedIndex].OnLeft(); break;
                 case ConsoleKey.RightArrow: rows[_selectedIndex].OnRight(); break;
                 case ConsoleKey.Enter:
                     selecting = false;
@@ -33,7 +31,7 @@ public class CompositeMenu(string menuTitle, IMenuRow[] rows)
             }
         }
 
-        return values[_selectedIndex];
+        return _selectedIndex;
     }
 
     private void Render()
@@ -41,7 +39,7 @@ public class CompositeMenu(string menuTitle, IMenuRow[] rows)
         // Console.SetCursorPosition(0, 0); // leaves artefacts
         Console.Clear();
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"=== {menuTitle.ToUpper()} ===");
+        Console.WriteLine($"=== {menuTitle()} ===");
         Console.ResetColor();
         Console.WriteLine("Use Arrow Keys to navigate and Enter to Continue:\n");
 
@@ -57,9 +55,7 @@ public class CompositeMenu(string menuTitle, IMenuRow[] rows)
                 Console.WriteLine();
             }
             else
-            {
-                Console.WriteLine($"    {rows[i].Label}  {rows[i].DisplayValue}");
-            }
+            { Console.WriteLine($"    {rows[i].Label}  {rows[i].DisplayValue}"); }
         }
     }
 }

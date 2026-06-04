@@ -2,12 +2,16 @@
 using Olbaid.Models.Archetypes;
 using Olbaid.Models.Creatures;
 
-namespace Olbaid.Models;
+namespace Olbaid;
 
 public class GameContext : DbContext
 {
     public DbSet<Archetype> Archetypes { get; set; }
     public DbSet<Creature>  Creatures  { get; set; }
+    public DbSet<Player>  Players  { get; set; }
+    
+    //temporary - remove later
+    public DbSet<RockMonster> RockMonsters { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
         => options.UseSqlite("Data Source=game.db");
@@ -21,5 +25,8 @@ public class GameContext : DbContext
             Id = 2, Strength = 2, Dexterity = 4, Intelligence = 0, BaseRange = 2 });
         modelBuilder.Entity<Sorcerer>().HasData(new Sorcerer { Name = "Sorcerer",
             Id = 3, Strength = 2, Dexterity = 1, Intelligence = 3, BaseRange = 3 });
+        modelBuilder.Entity<RockMonster>().HasData(new RockMonster 
+            { Id = 4, ArchetypeId = 1, X = 5, Y = 5 }
+        );
     }
 }

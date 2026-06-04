@@ -1,15 +1,20 @@
-﻿namespace Olbaid.Models.Creatures;
+﻿using Olbaid.Models.Archetypes;
+
+namespace Olbaid.Models.Creatures;
 
 public class Player : Creature
 {
-    public int X { get; private set; }
-    public int Y { get; private set; }
+    protected Player(){} // parameterless constructor only for EF
     
-    // maybe add class here
-    public Player(int initialX, int initialY)
+    public Player(int initialX, int initialY, Archetype archetype, int stren,  int dexte, int intel)
     {
         X = initialX;
         Y = initialY;
+        Archetype = archetype;
+        Strength     = archetype.Strength     + stren;
+        Dexterity    = archetype.Dexterity    + dexte;
+        Intelligence = archetype.Intelligence + intel;
+        Setup();
     }
     
     public bool Move(int deltaX, int deltaY, int mapWidth, int mapHeight)
