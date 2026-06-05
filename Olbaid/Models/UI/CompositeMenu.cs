@@ -1,4 +1,6 @@
-﻿namespace Olbaid.Models.UI;
+﻿using System;
+
+namespace Olbaid.Models.UI;
 
 public class CompositeMenu(Func<string> menuTitle, IMenuRow[] rows)
 {
@@ -10,8 +12,7 @@ public class CompositeMenu(Func<string> menuTitle, IMenuRow[] rows)
         while (selecting)
         {
             Render();
-
-            // only has up and down for now
+            
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
             switch (keyInfo.Key)
             {

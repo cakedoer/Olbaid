@@ -10,8 +10,9 @@ public class GameContext : DbContext
     public DbSet<Creature>  Creatures  { get; set; }
     public DbSet<Player>  Players  { get; set; }
     
-    // rock monsters temporary for testing purposes - remove later
+    // rock monsters temporary for testing purposes - remove/change later
     public DbSet<RockMonster> RockMonsters { get; set; }
+    public DbSet<Goblin> Goblins { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
         => options.UseSqlite("Data Source=game.db");
@@ -26,7 +27,8 @@ public class GameContext : DbContext
         modelBuilder.Entity<Sorcerer>().HasData(new Sorcerer { Name = "Sorcerer",
             Id = 3, Strength = 2, Dexterity = 1, Intelligence = 3, BaseRange = 3 });
         modelBuilder.Entity<RockMonster>().HasData(new RockMonster 
-            { Id = 4, ArchetypeId = 1, X = 5, Y = 5 }
-        );
+          { Id = 4, ArchetypeId = 1, X = 5, Y = 5 });
+        modelBuilder.Entity<LowTierMob>().HasData(new LowTierMob { Name = "LowTierMob",
+            Id = 5, Strength = 2, Dexterity = 2, Intelligence = 1, BaseRange = 1 });
     }
 }

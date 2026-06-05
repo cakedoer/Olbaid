@@ -8,6 +8,8 @@ public class Player : Creature
     
     private readonly int _stren, _dexte, _intel;
     
+    public new bool? IsDead { get; set; } = false;
+    
     public Player(int x, int y, Archetype archetype, int stren, int dexte, int intel) : base(archetype)
     {
         X      = x;

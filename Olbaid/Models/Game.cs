@@ -1,67 +1,86 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using Olbaid.Models.Creatures;
+using Olbaid.Models.AI;
+using Olbaid.Models.Archetypes;
 using Olbaid.Models.UI;
 
 namespace Olbaid.Models;
 
 public class Game(Player player, GameContext db)
 {
-    private readonly List<Creature> _monsters = db.RockMonsters
-        .Include(r => r.Archetype)
-        .ToList<Creature>()
-        .Select(m => { m.Setup(); return m; })
-        .ToList();
+    private readonly List<Creature> _monsters = CreatureFactory.LoadFromDb(db);
     
     private readonly Map.Map _map = new(10, 10);
     private string _statusMessage = "";
-
+    
     public GameState Start()
     {
         // test monster vals
-        foreach (var m in _monsters)
-            Console.WriteLine($"Monster: {m.GetType().Name}, Archetype: {m.Archetype?.Name ?? "NULL"}, STR: {m.Strength}, HP: {m.CurrHealth}");
-        Console.ReadKey(true);
+        // foreach (var m in _monsters)
+        //     Console.WriteLine($"Monster: {m.GetType().Name}, Archetype: {m.Archetype?.Name ?? "NULL"}, STR: {m.Strength}, HP: {m.CurrHealth}");
+        // Console.ReadKey(true);
+        
+        DrawFrame();
         
         while (true)
         {
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
             if (keyInfo.Key == ConsoleKey.Escape) return GameState.Mainmenu;
         
-            InputResult result = HandleInput(keyInfo); // pass keyInfo in
+            InputResult result = HandleInput(keyInfo);
             if (result == InputResult.Blocked) _statusMessage = "Blocked!";
             
-            Console.Clear();
+            if (result == InputResult.TurnConsumed) ProcessMonsterTurns();
             
-            Console.SetCursorPosition(0, 0);
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write($"HP: {player.CurrHealth}/{player.MaxHealth}  ");
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write($"MP: {player.CurrMana}/{player.MaxMana}  ");
-            Console.ResetColor();
-            Console.WriteLine();
-            Console.WriteLine();
-            
-            _map.Draw();
-            Console.SetCursorPosition(player.X, player.Y + 2);
-            Console.Write('@');
-            
-            foreach (Creature monster in _monsters)
+            if (player.CurrHealth <= 0)
             {
-                Console.SetCursorPosition(monster.X, monster.Y + 2);
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write('R');
-                Console.ResetColor();
+                player.IsDead = true;
+                db.Players.Update(player);
+                db.SaveChanges();
+                // todo game over screen and show high score
+                return GameState.Mainmenu;
             }
             
-            Console.SetCursorPosition(0, _map.Height + 3);
-            Console.Write(_statusMessage);
-            
-            // always render action menu below status message
-            Console.SetCursorPosition(0, _map.Height + 4);
-            Console.WriteLine("Choose action:");
-            Console.SetCursorPosition(0, _map.Height + 5);
-            Console.Write("  [Enter] Attack");
+            DrawFrame();
         }
+    }
+
+    private void DrawFrame()
+    {
+        Console.Clear();
+            
+        Console.SetCursorPosition(0, 0);
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.Write($"HP: {player.CurrHealth}/{player.MaxHealth}  ");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.Write($"MP: {player.CurrMana}/{player.MaxMana}  ");
+        Console.ResetColor();
+        Console.WriteLine();
+        Console.WriteLine();
+            
+        _map.Draw();
+        Console.SetCursorPosition(player.X, player.Y + 2);
+        Console.Write('@');
+            
+        foreach (Creature monster in _monsters)
+        {
+            Console.SetCursorPosition(monster.X, monster.Y + 2);
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write('R');
+            Console.ResetColor();
+        }
+            
+        Console.SetCursorPosition(0, _map.Height + 3);
+        Console.Write(_statusMessage);
+            
+        // always render action menu below status message
+        Console.SetCursorPosition(0, _map.Height + 4);
+        Console.WriteLine("Choose action:");
+        Console.SetCursorPosition(0, _map.Height + 5);
+        Console.Write("  [Enter] Attack");
     }
 
     private InputResult HandleInput(ConsoleKeyInfo keyInfo)
@@ -80,6 +99,7 @@ public class Game(Player player, GameContext db)
             case ConsoleKey.E: return player.Move(1, -1,  _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
             case ConsoleKey.Z: return player.Move(-1, 1,  _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
             case ConsoleKey.X: return player.Move(1, 1,   _map.Width, _map.Height) ? InputResult.TurnConsumed : InputResult.Blocked;
+            
             case ConsoleKey.Enter:  return RunAttack() ? InputResult.TurnConsumed : InputResult.None;
             case ConsoleKey.Escape: return InputResult.None; // handled separately
         }
@@ -89,7 +109,7 @@ public class Game(Player player, GameContext db)
     
     private bool RunAttack()
     {
-        // look for monsters in range
+        // look for monsters in range. todo: is list best here?
         List<Creature> targets = [];
         
         for (int y = player.Y - player.CurrRange; y <= player.Y + player.CurrRange; y++)
@@ -111,7 +131,7 @@ public class Game(Player player, GameContext db)
         
         // build target selection menu
         IMenuRow[] rows = targets
-            .Select(m => (IMenuRow)new SelectableRow($"{m.GetType().Name} (HP: {m.CurrHealth}/{m.MaxHealth})"))
+            .Select(m => (IMenuRow)new SelectableRow($"{m.GetType().Name} (HP: {m.CurrHealth}/{m.MaxHealth}) at: {m.X}, {m.Y}"))
             .Append(new SelectableRow("Cancel"))
             .ToArray();
 
@@ -142,5 +162,17 @@ public class Game(Player player, GameContext db)
                             $"{target.CurrHealth}/{target.MaxHealth} HP remaining."; }
         
         return true; // turn consumed
+    }
+    
+    private void ProcessMonsterTurns()
+    {
+        List<Creature> allCreatures = [player, .._monsters];
+        foreach (Creature monster in _monsters)
+            monster.Ai?.TakeTurn(monster, allCreatures, _map);
+    
+        // spawn goblin on random unoccupied tile each turn
+        Archetype goblinArchetype = db.Archetypes.Find(5)!; // looks for goblin with id5 that we seed
+        (int x, int y) = CreatureFactory.GetRandomUnoccupiedTile(_map, allCreatures);
+        _monsters.Add(CreatureFactory.SpawnGoblin(x, y, goblinArchetype));
     }
 }
